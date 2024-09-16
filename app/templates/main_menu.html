@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main Menu</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('https://c4.wallpaperflare.com/wallpaper/780/341/142/anime-sharingan-red-eyes-naruto-shippuuden-wallpaper-preview.jpg'); /* Postavi putanju do tvoje slike */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 36px;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px red;
+        }
+
+        /* User Info and Dropdown */
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info #userName {
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            min-width: 160px;
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: #fff;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-content a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dropdown.show .dropdown-content {
+            display: block;
+        }
+
+        /* Button Styles */
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.6);
+            border: none;
+            border-radius: 30px;
+            box-shadow: 0 6px 10px red;
+            transition: background-color 0.3s, transform 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-3px);
+        }
+
+        .button:active {
+            transform: translateY(2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Popup Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 80%;
+            max-width: 400px;
+            color: #333;
+            text-align: center;
+        }
+
+        .popup h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .popup-close {
+            cursor: pointer;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
+            transition: color 0.3s ease;
+        }
+
+        .popup-close:hover {
+            color: #000;
+        }
+
+        #updateNameForm input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-info">
+        <span id="userName"></span>
+        <div class="dropdown" id="dropdown">
+            <span class="dropdown-toggle" id="dropdownToggle">&#9660;</span>
+            <div class="dropdown-content">
+                <a href="#" id="changeNameOption">Change Name</a>
+            </div>
+        </div>
+    </div>
+    <h1>Welcome to the Duel</h1>
+    <button class="button" onclick="location.href='/api/game/play/'">Play</button>
+    <button class="button" onclick="location.href='/api/game/history/?token=' + localStorage.getItem('access_token')">History</button>
+    <button class="button" onclick="location.href='/api/game/leaderboard/?token=' + localStorage.getItem('access_token')">Leaderboard</button>
+    <button class="button" id="logoutButton">Logout</button>
+
+    <div class="popup" id="updateNamePopup">
+        <span class="popup-close" id="popupClose">&times;</span>
+        <h2>Update Name</h2>
+        <form id="updateNameForm">
+            <label for="newName">New Name:</label>
+            <input type="text" id="newName" name="newName" required><br>
+            <button type="submit" class="button">Update</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userName = localStorage.getItem('user_name');
+            document.getElementById('userName').textContent = userName;
+
+            const dropdown = document.getElementById('dropdown');
+            const dropdownToggle = document.getElementById('dropdownToggle');
+
+            dropdownToggle.addEventListener('click', function() {
+                dropdown.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            document.getElementById('changeNameOption').addEventListener('click', function() {
+                document.getElementById('updateNamePopup').style.display = 'block';
+            });
+
+            document.getElementById('popupClose').addEventListener('click', function() {
+                document.getElementById('updateNamePopup').style.display = 'none';
+            });
+
+            document.getElementById('updateNameForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const newName = document.getElementById('newName').value;
+                const csrfToken = localStorage.getItem('csrf_token');
+                const accessToken = localStorage.getItem('access_token');
+
+                try {
+                    const response = await fetch('/api/accounts/account/', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({ name: newName }),
+                    });
+
+                    if (response.ok) {
+                        localStorage.setItem('user_name', newName);
+                        document.getElementById('userName').textContent = newName;
+                        document.getElementById('updateNamePopup').style.display = 'none';
+                    } else {
+                        const result = await response.json();
+                        alert(result.message || 'An error occurred');
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+
+            document.getElementById('logoutButton').addEventListener('click', async function() {
+                const csrfToken = localStorage.getItem('csrf_token');
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (!csrfToken) {
+                    alert('CSRF token not found');
+                    return;
+                }
+                if (!refreshToken) {
+                    alert('Refresh token not found');
+                    return;
+                }
+                try {
+                    const response = await fetch('/api/auth/logout/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: JSON.stringify({ refresh_token: refreshToken }),
+                    });
+                    if (response.ok) {
+                        window.location.href = '/api/auth/login/';
+                    } else {
+                        const result = await response.json();
+                        alert(result.message || 'An error occurred');
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

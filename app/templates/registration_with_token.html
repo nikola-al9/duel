@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Password</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #2b2b2b;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #eaeaea;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        form {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input[type="password"] {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #444;
+            color: #f1f1f1;
+            font-size: 16px;
+        }
+
+        input[type="password"]::placeholder {
+            color: #aaa;
+        }
+
+        .error {
+            border-color: red;
+        }
+
+        button[type="submit"] {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .button-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .button-container button {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #555;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex: 1;
+        }
+
+        .button-container button:hover {
+            background-color: #666;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: #444;
+            border: 1px solid #666;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .popup-close {
+            cursor: pointer;
+            float: right;
+            font-size: 20px;
+            color: #aaa;
+        }
+
+        .popup-close:hover {
+            color: #f00;
+        }
+
+        .popup p {
+            margin: 0;
+            padding: 0;
+            color: #f1f1f1;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            form {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Set Your Password</h1>
+
+    <form id="set-password-form">
+        <input type="password" id="password_1" name="password_1" placeholder="Enter Password" required>
+        <input type="password" id="password_2" name="password_2" placeholder="Confirm Password" required>
+        <button type="submit">Confirm</button>
+    </form>
+
+    <div class="button-container">
+        <a href="/api/auth/register/"><button type="button">Register</button></a>
+        <a href="/api/auth/login/"><button type="button">Login</button></a>
+    </div>
+
+    <div class="popup" id="popup">
+        <span class="popup-close" id="popupClose">&times;</span>
+        <p id="popupMessage"></p>
+    </div>
+
+    <script>
+        document.getElementById('set-password-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const password1 = document.getElementById('password_1').value;
+            const password2 = document.getElementById('password_2').value;
+            const token = new URLSearchParams(window.location.search).get('reg_token');
+
+            if (password1 !== password2) {
+                document.getElementById('password_2').classList.add('error');
+                showPopup('Passwords do not match');
+                return;
+            } else {
+                document.getElementById('password_2').classList.remove('error');
+            }
+
+            try {
+                const response = await fetch('/api/auth/set_password/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password_1: password1,
+                        password_2: password2,
+                        token: token
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access);
+                    localStorage.setItem('refresh_token', data.refresh);
+
+                    // Fetch user name
+                    const meResponse = await fetch('/api/accounts/me/', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${data.access}`
+                        }
+                    });
+                    const meResult = await meResponse.json();
+                    if (meResponse.ok) {
+                        localStorage.setItem('user_name', meResult.results.name);
+                        window.location.href = '/api/auth/main_menu/';
+                    } else {
+                        throw new Error(meResult.message || 'An error occurred while fetching user info');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showPopup(errorData.message || 'Error setting password');
+                }
+            } catch (error) {
+                showPopup(error.message);
+            }
+        });
+
+        function showPopup(message) {
+            const popup = document.getElementById('popup');
+            const popupMessage = document.getElementById('popupMessage');
+            popupMessage.textContent = message;
+            popup.style.display = 'block';
+        }
+
+        document.getElementById('popupClose').addEventListener('click', function() {
+            document.getElementById('popup').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://img.freepik.com/premium-photo/creative-dark-binary-code-wallpaper-with-numbers-technology-computing-concept-3d-rendering_670147-53906.jpg'); 
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #loginForm {
+            background-color: rgba(255, 255, 255, 0.8); 
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="email"], input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"], button[type="button"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        button[type="button"] {
+            background-color: #007BFF;
+            color: white;
+            margin-top: 10px;
+        }
+
+        button[type="button"]:hover {
+            background-color: #0056b3;
+        }
+
+        /* Popup container */
+        #popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        /* Popup close button */
+        #popupClose {
+            cursor: pointer;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
+            transition: color 0.3s ease;
+        }
+
+        #popupClose:hover {
+            color: #000;
+        }
+
+        #popupMessage {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <form id="loginForm" method="post">
+        <h1>Login</h1>
+        {% csrf_token %}
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Login</button>
+        <button type="button" id="registerButton">Register</button>
+    </form>
+
+    <!-- Popup container -->
+    <div id="popup">
+        <span id="popupClose">&times;</span>
+        <p id="popupMessage"></p>
+    </div>
+
+    <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        try {
+            const response = await fetch('/api/auth/backend_login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(data),
+            });
+            const result = await response.json();
+            if (response.ok) {
+                localStorage.setItem('csrf_token', csrfToken);
+                localStorage.setItem('access_token', result.results.token.access); // Store the access token
+                localStorage.setItem('refresh_token', result.results.token.refresh); // Store the refresh token
+
+                // Fetch user name
+                const meResponse = await fetch('/api/accounts/me/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${result.results.token.access}`
+                    }
+                });
+                const meResult = await meResponse.json();
+                if (meResponse.ok) {
+                    localStorage.setItem('user_name', meResult.results.name);
+                    window.location.href = '/api/auth/main_menu/';
+                } else {
+                    throw new Error(meResult.message || 'An error occurred while fetching user info');
+                }
+            } else {
+                throw new Error(result.message || 'An error occurred');
+            }
+        } catch (error) {
+            showPopup(error.message);
+        }
+    });
+
+    document.getElementById('registerButton').addEventListener('click', function() {
+        window.location.href = '/api/auth/register/';
+    });
+
+    function showPopup(message) {
+        const popup = document.getElementById('popup');
+        const popupMessage = document.getElementById('popupMessage');
+        popupMessage.textContent = message;
+        popup.style.display = 'block';
+    }
+
+    document.getElementById('popupClose').addEventListener('click', function() {
+        document.getElementById('popup').style.display = 'none';
+    });
+    </script>
+</body>
+</html>
