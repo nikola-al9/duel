@@ -174,7 +174,7 @@
         </div>
     </div>
     <h1>Welcome to the Duel</h1>
-    <button class="button" onclick="location.href='/api/game/play/'">Play</button>
+    <button class="button" id="playButton">Play</button>
     <button class="button" onclick="location.href='/api/game/history/?token=' + localStorage.getItem('access_token')">History</button>
     <button class="button" onclick="location.href='/api/game/leaderboard/?token=' + localStorage.getItem('access_token')">Leaderboard</button>
     <button class="button" id="logoutButton">Logout</button>
@@ -276,6 +276,28 @@
                     alert(error.message);
                 }
             });
+            document.getElementById('playButton').addEventListener('click', function() {
+                const roomName = 'duel';  // Can be dynamically generated or fetched from the backend
+                const socket = new WebSocket('ws://localhost:8046/ws/game/duel/');;
+
+                socket.onopen = function(event) {
+                    console.log('WebSocket connection established');
+                };
+
+                socket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    alert(data.message);  // Show "Waiting for opponent" or any message received from the server
+                };
+
+                socket.onclose = function(event) {
+                    console.log('WebSocket connection closed');
+                };
+
+                socket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+            });
+
         });
     </script>
 </body>
