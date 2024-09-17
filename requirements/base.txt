@@ -23,3 +23,7 @@ django-storages
 
 django-parler==2.2
 django-rosetta==0.9.6
+
+channels
+channels-redis
+daphne

@@ -50,3 +50,18 @@ services:
       - ./.env.dev
     depends_on:
       - redis
+
+  daphne:
+    build:
+      context: .
+      dockerfile: docker/local.Dockerfile
+    command: daphne -b 0.0.0.0 -p 8001 config.asgi:application
+    volumes:
+        - .:/app
+    ports:
+      - "8046:8001"
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - psql
+      - redis
