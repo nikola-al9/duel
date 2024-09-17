@@ -59,6 +59,7 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'after_response',
     'storages',
+    'channels'
 ]
 
 INSTALLED_APPS = [
