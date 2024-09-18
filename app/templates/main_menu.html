@@ -189,6 +189,12 @@
         </form>
     </div>
 
+    <div class="popup" id="countdownPopup">
+        <h2>Game Starting In</h2>
+        <span id="countdownTimer">5</span>
+    </div>
+    <video id="cameraFeed" width="640" height="480" autoplay></video>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const userName = localStorage.getItem('user_name');
@@ -277,28 +283,62 @@
                 }
             });
             document.getElementById('playButton').addEventListener('click', function() {
-                const roomName = 'duel';  // Can be dynamically generated or fetched from the backend
-                const socket = new WebSocket('ws://localhost:8046/ws/game/duel/');;
+            const roomName = 'duel';  // Can be dynamically generated or fetched from the backend
+            const socket = new WebSocket('ws://localhost:8046/ws/game/duel/');
 
-                socket.onopen = function(event) {
-                    console.log('WebSocket connection established');
-                };
+            socket.onopen = function(event) {
+                console.log('WebSocket connection established');
+            };
 
-                socket.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    alert(data.message);  // Show "Waiting for opponent" or any message received from the server
-                };
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.message === 'Opponent found!') {
+                    showCountdown();
+                } else {
+                    alert(data.message);  // Show "Waiting for opponent" or any other message received from the server
+                }
+            };
 
-                socket.onclose = function(event) {
-                    console.log('WebSocket connection closed');
-                };
+            socket.onclose = function(event) {
+                console.log('WebSocket connection closed');
+            };
 
-                socket.onerror = function(error) {
-                    console.error('WebSocket error:', error);
-                };
-            });
-
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
         });
+
+        function showCountdown() {
+            const countdownPopup = document.getElementById('countdownPopup');
+            const countdownTimer = document.getElementById('countdownTimer');
+            let countdownValue = 5;
+
+            countdownPopup.style.display = 'block';
+            countdownTimer.textContent = countdownValue;
+
+            const countdownInterval = setInterval(() => {
+                countdownValue -= 1;
+                countdownTimer.textContent = countdownValue;
+
+                if (countdownValue <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownPopup.style.display = 'none';
+                    openCamera();
+                }
+            }, 1000);
+        }
+
+        async function openCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const cameraFeed = document.getElementById('cameraFeed');
+                cameraFeed.srcObject = stream;
+                cameraFeed.style.display = 'block';
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+            }
+        }
+    });
     </script>
 </body>
 </html>
