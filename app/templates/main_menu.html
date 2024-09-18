@@ -277,28 +277,82 @@
                 }
             });
             document.getElementById('playButton').addEventListener('click', function() {
-                const roomName = 'duel';  // Can be dynamically generated or fetched from the backend
-                const socket = new WebSocket('ws://localhost:8046/ws/game/duel/');;
+            const roomName = 'duel';
+            const socket = new WebSocket('ws://192.168.183.78:8046/ws/game/duel/');
 
-                socket.onopen = function(event) {
-                    console.log('WebSocket connection established');
-                };
+            socket.onopen = function(event) {
+                console.log('WebSocket connection established');
+            };
 
-                socket.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    alert(data.message);  // Show "Waiting for opponent" or any message received from the server
-                };
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                console.log("Message received:", data.message);
+                if (data.message === 'Opponent found!') {
+                    startCountdown(socket);
+                } else if (data.message === 'Open camera') {
+                    openCamera();
+                } else {
+                    alert(data.message);
+                }
+            };
 
-                socket.onclose = function(event) {
-                    console.log('WebSocket connection closed');
-                };
+            socket.onclose = function(event) {
+                console.log('WebSocket connection closed');
+            };
 
-                socket.onerror = function(error) {
-                    console.error('WebSocket error:', error);
-                };
-            });
-
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
         });
+
+        function startCountdown(socket) {
+            const countdownWindow = document.createElement('div');
+            countdownWindow.style.position = 'fixed';
+            countdownWindow.style.left = '50%';
+            countdownWindow.style.top = '50%';
+            countdownWindow.style.transform = 'translate(-50%, -50%)';
+            countdownWindow.style.padding = '20px';
+            countdownWindow.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            countdownWindow.style.color = '#fff';
+            countdownWindow.style.fontSize = '48px';
+            countdownWindow.style.textAlign = 'center';
+            countdownWindow.style.borderRadius = '10px';
+            countdownWindow.style.zIndex = '1000';
+            document.body.appendChild(countdownWindow);
+
+            let countdown = 5;
+            const countdownInterval = setInterval(() => {
+                if (countdown > 0) {
+                    countdownWindow.textContent = countdown;
+                    countdown--;
+                } else {
+                    clearInterval(countdownInterval);
+                    document.body.removeChild(countdownWindow);
+                    socket.send(JSON.stringify({ message: 'Open camera' }));
+                }
+            }, 1000);
+        }
+
+        let isCameraOpen = false;
+
+function openCamera() {
+    if (isCameraOpen) {
+        return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            const videoElement = document.createElement('video');
+            videoElement.srcObject = stream;
+            videoElement.play();
+            document.body.appendChild(videoElement);
+            isCameraOpen = true;
+        })
+        .catch(error => {
+            console.error('Error accessing camera:', error);
+        });
+}
+    });
     </script>
 </body>
 </html>
